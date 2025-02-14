@@ -1,0 +1,51 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from scipy.signal import convolve2d
+
+
+def m_shift(vector):
+    """Eigenvalue-based transformation with eigenvalue 2.72."""
+    return 2.72 * vector
+
+
+def initialize_grid(size):
+    """Initialize a grid with a random binary pattern."""
+    return np.random.choice([0, 1], size=(size, size))
+
+
+def apply_eigen_transformation(grid):
+    """Apply eigenvalue-based scaling to the grid with direct vectorization."""
+    return (m_shift(grid) >= 1).astype(int)
+
+
+def update(frame_num, img, grid, kernel):
+    """Update function for animation, applying Game of Life rules."""
+
+    # Compute the sum of neighbors using precomputed kernel with convolution
+    neighbor_count = convolve2d(grid, kernel, mode='same', boundary='wrap')
+
+    # Apply Game of Life rules
+    new_grid = ((grid == 1) & ((neighbor_count == 2) | (neighbor_count == 3))) | ((grid == 0) & (neighbor_count == 3))
+
+    # Apply the eigenvalue-based transformation with vectorized operation
+    grid[:] = apply_eigen_transformation(new_grid.astype(int))
+
+    assert grid.shape == new_grid.shape, "Grid structure changed unexpectedly"
+
+    img.set_data(grid)
+    return img,
+
+
+# Initialize the game
+size = 50
+kernel = np.array([[1, 1, 1], [1, 0, 1], [1, 1, 1]])  # Precomputed kernel to avoid redundancy
+grid = initialize_grid(size)
+
+# Set up the plot
+fig, ax = plt.subplots()
+img = ax.imshow(grid, interpolation='nearest', cmap='gray')
+ani = animation.FuncAnimation(fig, update, fargs=(img, grid, kernel), frames=100, interval=200, save_count=50)
+
+plt.title("Eigenvalue-Based Game of Life (λ=2.72)")
+plt.show()
